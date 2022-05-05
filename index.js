@@ -1,6 +1,6 @@
 require('dotenv').config();
-const {Client} = require('discord.js');
-const {GiveawaysManager} = require('discord-giveaways');
+const { Client } = require('discord.js');
+const { GiveawaysManager } = require('discord-giveaways');
 const express = require('express');
 const bodyParser = require('body-parser');
 
@@ -9,13 +9,14 @@ const FactoryBot = require('./Classes/FactoryBot').FactoryBot;
 const RandomBot = require('./Classes/RandomBot').RandomBot;
 const projectConfig = require('./ProjectConfig/projectConfig').projectConfig;
 const CORE_CONTRACTS = require('./ProjectConfig/coreContracts.json');
-const {LooksRareAPIPollBot} = require('./Classes/LooksRareAPIPollBot');
+const { LooksRareAPIPollBot } = require('./Classes/LooksRareAPIPollBot');
+const { OpenseaAPIPollBot } = require('./Classes/OpenseaAPIPollBot');
 // Special handlers.
-const {triageActivityMessage} = require('./Utils/activityTriager');
+const { triageActivityMessage } = require('./Utils/activityTriager');
 
 const smartBotResponse = require('./Utils/smartBotResponse').smartBotResponse;
 const handleGiveawayMessage =
-  require('./Utils/giveawayCommands').handleGiveawayMessage;
+	require('./Utils/giveawayCommands').handleGiveawayMessage;
 
 // Misc. server configuration info.
 const TOKEN = process.env.TOKEN;
@@ -41,30 +42,30 @@ const app = express();
 
 app.use(bodyParser.json());
 
-app.post('/update', function(req, res) {
-  console.log(
-      'received update with body:\n',
-      JSON.stringify(req.body, null, 2),
-      '\n',
-  );
+app.post('/update', function (req, res) {
+	console.log(
+		'received update with body:\n',
+		JSON.stringify(req.body, null, 2),
+		'\n'
+	);
 
-  res.setHeader('Content-Type', 'application/json');
-  res.json({
-    success: true,
-  });
+	res.setHeader('Content-Type', 'application/json');
+	res.json({
+		success: true,
+	});
 });
 
-app.get('/update', function(req, res) {
-  console.log('received get with body:\n', req.body, '\n');
+app.get('/update', function (req, res) {
+	console.log('received get with body:\n', req.body, '\n');
 
-  res.setHeader('Content-Type', 'application/json');
-  res.json({
-    success: true,
-  });
+	res.setHeader('Content-Type', 'application/json');
+	res.json({
+		success: true,
+	});
 });
 
-app.listen(PORT, function() {
-  console.log('Server is listening on port ', PORT);
+app.listen(PORT, function () {
+	console.log('Server is listening on port ', PORT);
 });
 
 // Bot setup.
@@ -72,42 +73,42 @@ const bot = new Client();
 bot.login(TOKEN);
 
 bot.on('ready', (client) => {
-  console.info(`Logged in as ${bot.user.tag}!`);
-  randomGuy.startRoutine(bot.channels.cache.get(CHANNEL_ART_CHAT));
+	console.info(`Logged in as ${bot.user.tag}!`);
+	randomGuy.startRoutine(bot.channels.cache.get(CHANNEL_ART_CHAT));
 });
 
 // Manage Giveaways with Artbot
 bot.giveawaysManager = new GiveawaysManager(bot, {
-  storage: './giveaways.json',
-  updateCountdownEvery: 5000,
-  default: {
-    botsCanWin: false,
-    embedColor: '#FF0000',
-    reaction: '🎉',
-  },
+	storage: './giveaways.json',
+	updateCountdownEvery: 5000,
+	default: {
+		botsCanWin: false,
+		embedColor: '#FF0000',
+		reaction: '🎉',
+	},
 });
 bot.giveawaysManager.on(
-    'giveawayReactionAdded',
-    (giveaway, member, reaction) => {
-      console.log(
-          `${member.user.tag} entered giveaway #${giveaway.messageID} (${reaction.emoji.name})`,
-      );
-    },
+	'giveawayReactionAdded',
+	(giveaway, member, reaction) => {
+		console.log(
+			`${member.user.tag} entered giveaway #${giveaway.messageID} (${reaction.emoji.name})`
+		);
+	}
 );
 bot.giveawaysManager.on(
-    'giveawayReactionRemoved',
-    (giveaway, member, reaction) => {
-      console.log(
-          `${member.user.tag} unreact to giveaway #${giveaway.messageID} (${reaction.emoji.name})`,
-      );
-    },
+	'giveawayReactionRemoved',
+	(giveaway, member, reaction) => {
+		console.log(
+			`${member.user.tag} unreact to giveaway #${giveaway.messageID} (${reaction.emoji.name})`
+		);
+	}
 );
 bot.giveawaysManager.on('giveawayEnded', (giveaway, winners) => {
-  console.log(
-      `Giveaway #${giveaway.messageID} ended! Winners: ${winners
-          .map((member) => member.user.username)
-          .join(', ')}`,
-  );
+	console.log(
+		`Giveaway #${giveaway.messageID} ended! Winners: ${winners
+			.map((member) => member.user.username)
+			.join(', ')}`
+	);
 });
 
 const factoryParty = new FactoryBot();
@@ -118,102 +119,157 @@ const addressCollector = new AddressCollector();
 
 // Message event handler.
 bot.on('message', (msg) => {
-  const msgAuthor = msg.author.username;
-  const msgContent = msg.content;
-  const msgContentLowercase = msgContent.toLowerCase();
-  const channelID = msg.channel.id;
+	const msgAuthor = msg.author.username;
+	const msgContent = msg.content;
+	const msgContentLowercase = msgContent.toLowerCase();
+	const channelID = msg.channel.id;
 
-  // If there is not a channel ID configured where the message was sent
-  // short-circuit handling the message
-  const channel = projectConfig.channels[channelID];
-  if (!channel) {
-    return;
-  }
+	// If there is not a channel ID configured where the message was sent
+	// short-circuit handling the message
+	const channel = projectConfig.channels[channelID];
+	if (!channel) {
+		return;
+	}
 
-  /*
-   * If the message is in the activity channel, forward the message on
-   * To the appropriate sub-channel.
-   */
-  if (channelID == PROD_CHANNEL_ACTIVITY_ALL) {
-    triageActivityMessage(msg, bot);
-    return;
-  }
+	/*
+	 * If the message is in the activity channel, forward the message on
+	 * To the appropriate sub-channel.
+	 */
+	if (channelID == PROD_CHANNEL_ACTIVITY_ALL) {
+		triageActivityMessage(msg, bot);
+		return;
+	}
 
-  /*
-   * If message is in special address collection channel, forward message
-   * To that handler and return early.
-   */
-  if (channelID == CHANNEL_ADDRESS_COLLECTION) {
-    addressCollector.addressCollectionHandler(msg);
-    return;
-  }
+	/*
+	 * If message is in special address collection channel, forward message
+	 * To that handler and return early.
+	 */
+	if (channelID == CHANNEL_ADDRESS_COLLECTION) {
+		addressCollector.addressCollectionHandler(msg);
+		return;
+	}
 
-  // Respond to giveaway requests.
-  if (msgContentLowercase.includes('giveaway!')) {
-    console.log('Time for a giveaway');
-    handleGiveawayMessage(msg, bot);
-    return;
-  }
+	// Respond to giveaway requests.
+	if (msgContentLowercase.includes('giveaway!')) {
+		console.log('Time for a giveaway');
+		handleGiveawayMessage(msg, bot);
+		return;
+	}
 
-  // Handle piece # requests.
-  if (msgContent.startsWith('#')) {
-    switch (channelID) {
-      case CHANNEL_FACTORY:
-        factoryParty.handleNumberMessage(msg);
-        break;
-      case CHANNEL_ART_CHAT:
-        randomGuy.handleRandomMessage(msg);
-        break;
-      // Fall-back - expect a project bot to handle
-      default:
-        projectConfig.routeProjectNumberMsg(channelID, msg);
-        break;
-    }
-    return;
-  }
+	// Handle piece # requests.
+	if (msgContent.startsWith('#')) {
+		switch (channelID) {
+			case CHANNEL_FACTORY:
+				factoryParty.handleNumberMessage(msg);
+				break;
+			case CHANNEL_ART_CHAT:
+				randomGuy.handleRandomMessage(msg);
+				break;
+			// Fall-back - expect a project bot to handle
+			default:
+				projectConfig.routeProjectNumberMsg(channelID, msg);
+				break;
+		}
+		return;
+	}
 
-  // Handle special info questions that ArtBot knows how to answer.
-  const artBotID = bot.user.id;
-  smartBotResponse(msgContentLowercase, msgAuthor, artBotID, channelID).then(
-      (smartResponse) => {
-        if (smartResponse !== null && smartResponse !== undefined) {
-          msg.reply(null, {
-            embed: smartResponse,
-            allowedMentions: {
-              repliedUser: true,
-            },
-          });
-        }
-      },
-  );
+	// Handle special info questions that ArtBot knows how to answer.
+	const artBotID = bot.user.id;
+	smartBotResponse(msgContentLowercase, msgAuthor, artBotID, channelID).then(
+		(smartResponse) => {
+			if (smartResponse !== null && smartResponse !== undefined) {
+				msg.reply(null, {
+					embed: smartResponse,
+					allowedMentions: {
+						repliedUser: true,
+					},
+				});
+			}
+		}
+	);
 });
+
+let slugs = [];
+const getArtBlocksProjectCount =
+	require('./Utils/parseArtBlocksAPI').getArtBlocksProjectCount;
+const fetch = require('node-fetch');
+getArtBlocksProjectCount().then(async (count) => {
+	for (var i = 0; i < 20; i++) {
+		let contractAddr = i > 2 ? CORE_CONTRACTS.V2 : CORE_CONTRACTS.OG;
+		let tokenId = i * 1000000;
+		let apiEndpoint = `https://api.opensea.io/api/v1/assets?token_ids=${tokenId}&order_direction=desc&asset_contract_address=${contractAddr}&limit=20&include_orders=false`;
+
+		const options = {
+			method: 'GET',
+			headers: {
+				Accept: 'application/json',
+				'X-API-KEY': process.env.OPENSEA_API_KEY,
+			},
+		};
+		query(i, apiEndpoint, options);
+	}
+});
+
+function query(i, apiEndpoint, options) {
+	let resp;
+	setTimeout(function () {
+		fetch(apiEndpoint, options)
+			.then((response) => response.json())
+			.then((response) => {
+				resp = response;
+				const slug = response.assets[0].collection.slug;
+				new OpenseaAPIPollBot(
+					`https://api.opensea.io/api/v1/events?collection_slug=${slug}&event_type=created`,
+					15000,
+					bot,
+					{
+						Accept: 'application/json',
+						'X-API-KEY': process.env.OPENSEA_API_KEY,
+					}
+				);
+				new OpenseaAPIPollBot(
+					`https://api.opensea.io/api/v1/events?collection_slug=${slug}&event_type=successful`,
+					15000,
+					bot,
+					{
+						Accept: 'application/json',
+						'X-API-KEY': process.env.OPENSEA_API_KEY,
+					}
+				);
+			})
+			.catch((err) => {
+				console.error(err);
+				console.log(apiEndpoint);
+			});
+	}, 1000 * i);
+}
 
 // Instantiate API Pollers
 
 // LooksRare pollers for V2 Contract
 // List Events
 new LooksRareAPIPollBot(
-    `https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.V2}&type=LIST&pagination[first]=25`,
-    API_POLL_TIME_MS,
-    bot,
+	`https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.V2}&type=LIST&pagination[first]=25`,
+	API_POLL_TIME_MS,
+	bot
 );
 // Sale Events
 new LooksRareAPIPollBot(
-    `https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.V2}&type=SALE&pagination[first]=25`,
-    API_POLL_TIME_MS,
-    bot,
+	`https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.V2}&type=SALE&pagination[first]=25`,
+	API_POLL_TIME_MS,
+	bot
 );
 
 // LooksRare pollers for OG Contract
 // List Events
 new LooksRareAPIPollBot(
-    `https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.OG}&type=LIST&pagination[first]=25`,
-    API_POLL_TIME_MS,
-    bot,
+	`https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.OG}&type=LIST&pagination[first]=25`,
+	API_POLL_TIME_MS,
+	bot
 );
 // Sale Events
 new LooksRareAPIPollBot(
-    `https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.OG}&type=SALE&pagination[first]=25`,
-    API_POLL_TIME_MS,
-    bot,
+	`https://api.looksrare.org/api/v1/events?collection=${CORE_CONTRACTS.OG}&type=SALE&pagination[first]=25`,
+	API_POLL_TIME_MS,
+	bot
 );
