@@ -71,7 +71,15 @@ class OpenseaAPIPollBot extends APIPollBot {
     // Event_type will either be SALE or LIST
     const eventType = msg.event_type
 
+    if (BAN_ADDRESSES.has(owner)) {
+      console.log(`Skipping message propagation for ${owner}`)
+      return
+    }
+    
     // Construct price field (different info/verbiage depending on sale or list)
+    const sellerText = owner + (ownerName !== '' ? ' (' + ownerName + ')' : '')
+    embed.addField('Seller (Opensea)', sellerText)
+
     let priceText, price, owner, ownerName
     if (eventType === 'successful') {
       // Item sold, add 'Buyer' field
@@ -82,7 +90,7 @@ class OpenseaAPIPollBot extends APIPollBot {
           : '')
 
       embed.addField('Buyer', buyerText)
-      priceText = 'Sale Price'
+      priceText = 'SOLD for'
       price = msg.total_price
       owner = msg.seller.address
       ownerName =
@@ -102,12 +110,6 @@ class OpenseaAPIPollBot extends APIPollBot {
       embed.setColor(this.listColor)
     }
 
-    if (BAN_ADDRESSES.has(owner)) {
-      console.log(`Skipping message propagation for ${owner}`)
-      return
-    }
-    const sellerText = owner + (ownerName !== '' ? ' (' + ownerName + ')' : '')
-    embed.addField('Seller (Opensea)', sellerText)
     embed.addField(
       priceText,
       parseInt(price) / 1000000000000000000 + 'ETH',
